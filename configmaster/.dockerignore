@@ -1,0 +1,13 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+
+data/
+*.key
+config/client-spec.local.json
+
+docs/
+scripts/
+src/test/

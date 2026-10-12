@@ -76,7 +76,7 @@ echo "Compiling ConfigMaster..."
     mvn -q -DskipTests compile
 )
 
-echo "Running ConfigMaster merge benchmark..."
+echo "Running ConfigMaster end-to-end CLI benchmark..."
 
 start_ns=$(date +%s%N)
 
@@ -96,7 +96,7 @@ if [[ ! -s "$OUTPUT_FILE" ]]; then
     exit 1
 fi
 
-echo "Merge completed in ${elapsed_ms} ms."
+echo "End-to-end CLI wall time (including Maven/JVM startup): ${elapsed_ms} ms."
 
 if [[ ! -f "$RESULT_FILE" ]]; then
     cat > "$RESULT_FILE" <<'EOF'
@@ -110,18 +110,28 @@ The benchmark generates two JSON configuration layers. Each layer contains 200 g
 
 Both layers include the required `app.name` and `app.port` fields so the merged configuration is valid against the current client specification.
 
-The script generates the test files and compiles ConfigMaster before timing starts. Only the `merge` command is included in the recorded wall time.
+The script generates the test files and compiles ConfigMaster before timing starts.
+
+The recorded wall time measures the full `mvn exec:java` invocation, including Maven and JVM startup, configuration loading, merging, validation, and output generation. It is an end-to-end CLI measurement, not the time spent on merging alone.
 
 Generated benchmark files are stored under `target/benchmark/` and are not committed.
 
 ## Results
 
-| Date                | Groups | Keys per group | Values per layer | Wall time |
-|---------------------|-------:|---------------:|-----------------:|----------:|
+| Date                | Groups | Keys per group | Values per layer | End-to-end CLI wall time |
+|---------------------|-------:|---------------:|-----------------:|-------------------------:|
 EOF
 fi
 
-printf '| %-19s | %6s | %14s | %16s | %9s |\n' \
+if [[ -s "$RESULT_FILE" ]]; then
+    last_char=$(tail -c 1 "$RESULT_FILE" | od -An -tu1 | tr -d '[:space:]')
+
+    if [[ "$last_char" != "10" ]]; then
+        printf '\n' >> "$RESULT_FILE"
+    fi
+fi
+
+printf '| %-19s | %6s | %14s | %16s | %24s |\n' \
     "$(date '+%Y-%m-%d %H:%M:%S')" \
     "$GROUP_COUNT" \
     "$KEYS_PER_GROUP" \

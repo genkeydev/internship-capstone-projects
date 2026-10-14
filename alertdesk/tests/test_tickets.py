@@ -3,12 +3,43 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
 from alertdesk import db
 from alertdesk.app import app
+
+
+def test_audit_events_are_append_only(tmp_path):
+    conn = db.connect(tmp_path / "audit.sqlite")
+    db.init_schema(conn)
+
+    conn.execute(
+        """INSERT INTO audit_events (ticket_id, actor, action, detail)
+           VALUES (?, ?, ?, ?)""",
+        (None, "analyst", "reviewed", "initial event"),
+    )
+    event_id = conn.execute("SELECT id FROM audit_events").fetchone()["id"]
+    conn.commit()
+
+    with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+        conn.execute(
+            "UPDATE audit_events SET detail = ? WHERE id = ?",
+            ("changed", event_id),
+        )
+    conn.rollback()
+
+    with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+        conn.execute("DELETE FROM audit_events WHERE id = ?", (event_id,))
+    conn.rollback()
+
+    detail = conn.execute(
+        "SELECT detail FROM audit_events WHERE id = ?", (event_id,)
+    ).fetchone()["detail"]
+    assert detail == "initial event"
+    conn.close()
 
 
 @pytest.fixture()

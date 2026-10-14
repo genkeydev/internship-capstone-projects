@@ -36,9 +36,11 @@ The current sample values are:
 
 The implementation must read client-defined values from configuration rather than hardcoding them in Python.
 
+
 ## 4. Ticket Status Workflow
 
 The current sample workflow is:
 
 ```text
-new → triaged → assigned → resolved → closed
+new -> triaged -> assigned -> resolved -> closed
+```

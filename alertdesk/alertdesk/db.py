@@ -46,6 +46,18 @@ def init_schema(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (ticket_id) REFERENCES tickets(id)
         );
+
+        CREATE TRIGGER IF NOT EXISTS audit_events_no_update
+        BEFORE UPDATE ON audit_events
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_events are append-only');
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS audit_events_no_delete
+        BEFORE DELETE ON audit_events
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_events are append-only');
+        END;
         """
     )
     conn.commit()

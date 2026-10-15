@@ -9,11 +9,12 @@ RUN mvn -B -DskipTests package dependency:copy-dependencies \
     -DoutputDirectory=target/dependency
 
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine-3.24
 
 WORKDIR /app
 
-RUN useradd --system --uid 10001 --create-home configmaster
+RUN addgroup -S configmaster && \
+    adduser -S -u 10001 -G configmaster configmaster
 
 COPY --from=build /build/target/configmaster-0.1.0.jar /app/configmaster.jar
 COPY --from=build /build/target/dependency /app/lib

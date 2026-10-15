@@ -17,7 +17,7 @@ RUN apk upgrade --no-cache && \
     addgroup -S configmaster && \
     adduser -S -u 10001 -G configmaster configmaster
 
-COPY --from=build /build/target/configmaster-0.1.0.jar /app/configmaster.jar
+COPY --from=build /build/target/configmaster-1.0.0.jar /app/configmaster.jar
 COPY --from=build /build/target/dependency /app/lib
 COPY config/client-spec.json /app/config/client-spec.json
 

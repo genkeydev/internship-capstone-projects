@@ -6,7 +6,7 @@
 
   <groupId>com.genkey</groupId>
   <artifactId>configmaster</artifactId>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <name>ConfigMaster CLI</name>
   <description>Year 1 Software Engineering capstone — load, validate, and merge configuration</description>
 

@@ -38,7 +38,14 @@ The implementation must read client-defined values from configuration rather tha
 
 ## 4. Ticket Status Workflow
 
-The current sample workflow is:
+The configured statuses are `new`, `triaged`, `assigned`, `resolved`, and
+`closed`. Legal transitions, as defined in `config/client-spec.json`, are:
 
-```text
-new → triaged → assigned → resolved → closed
+- `new` -> `triaged` or `closed`
+- `triaged` -> `assigned` or `closed`
+- `assigned` -> `resolved` or `closed`
+- `resolved` -> `closed`
+- `closed` -> no further status
+
+The service reads this transition map from the client specification and rejects
+status changes not listed there.

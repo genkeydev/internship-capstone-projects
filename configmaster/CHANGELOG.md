@@ -30,3 +30,5 @@ This file records the main changes made to ConfigMaster.
 - Configured the Docker container to run without root privileges.
 - Added `.dockerignore` exclusions for unnecessary files and local sensitive data.
 - Configured Trivy to report HIGH and CRITICAL vulnerabilities and fail CI when detected.
+- Updated Jackson dependencies from 2.18.2 to 2.18.11 to resolve reported security vulnerabilities.
+- Switched the Docker runtime to Eclipse Temurin Java 21 on Alpine Linux to address container vulnerabilities.

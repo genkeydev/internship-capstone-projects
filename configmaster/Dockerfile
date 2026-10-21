@@ -13,7 +13,8 @@ FROM eclipse-temurin:21-jre-alpine-3.24
 
 WORKDIR /app
 
-RUN addgroup -S configmaster && \
+RUN apk upgrade --no-cache && \
+    addgroup -S configmaster && \
     adduser -S -u 10001 -G configmaster configmaster
 
 COPY --from=build /build/target/configmaster-0.1.0.jar /app/configmaster.jar

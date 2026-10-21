@@ -32,6 +32,24 @@ mvn -q exec:java -Dexec.args="merge fixtures/defaults.json fixtures/conflict-ove
 
 Expect a non-zero exit: `app.region` uses `fail_on_conflict`.
 
+## Docker (Week 7)
+
+Build the image from the `configmaster/` directory:
+
+```bash
+docker build -t configmaster:1.0.0 .
+```
+
+Run the CLI with the fixtures directory mounted read-only (PowerShell):
+
+```powershell
+docker run --rm -v "${PWD}/fixtures:/app/fixtures:ro" configmaster:1.0.0 show fixtures/defaults.json fixtures/overlay.json
+```
+
+The `:ro` option prevents the container from modifying the mounted fixtures. This command was tested successfully and produced merged JSON containing port `9090` and the `metrics` and `tracing` features.
+
+**Versioning note:** The Dockerfile currently copies `target/configmaster-0.1.0.jar`. If the version in `pom.xml` changes, update the JAR filename in the Dockerfile to match before rebuilding the image.
+
 ## Git / PR workflow
 
 | Work | PR target |

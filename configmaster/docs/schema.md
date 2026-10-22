@@ -8,7 +8,7 @@ September 29, 2026
 
 This document describes the structure of `config/client-spec.json`, the file that drives ConfigMaster's validation and merge behavior at runtime.
 
-GenKey is the client for this internship project. The Northwind values currently present in the scaffold are sample data used to demonstrate the schema structure and behavior.
+The current client is Northwind Payments, based on the brief provided by Priya Shah, the platform lead. GenKey is the organization hosting the internship. The field names in the specification, such as `app.features` and `app.region`, come from Northwind's requirements and are used to show how ConfigMaster handles different configuration rules.
 
 The schema is data-driven. Required fields, expected types, and merge strategies are read from the JSON file rather than hard-coded as field names in Java.
 
@@ -64,9 +64,9 @@ Current scaffold value:
 "client": "Northwind Platform"
 ```
 
-`Northwind Platform` is sample data shipped with the project scaffold. GenKey is the client for this internship project.
+`Northwind Platform` refers to the current client, Northwind Payments. The client details come from the brief provided by Priya Shah, Northwind's platform lead.
 
-The current implementation loads the `client` value as metadata. Validation and merge behavior are driven by the remaining schema fields.
+ConfigMaster loads the `client` value as part of the specification, but it uses the other schema fields to decide how configuration files should be validated and merged.
 
 ### `requiredFields`
 
@@ -81,7 +81,9 @@ Current sample values:
 ]
 ```
 
-A missing or `null` required field fails validation and is reported as a validation issue.
+A required field fails validation when it is missing from the merged configuration.
+
+However, the current validator treats a field containing JSON `null` as present. It also skips type checking for `null` values. This means a required field set to `null` currently passes validation, even though the value may not be useful to the application.
 
 Dotted paths refer to values inside nested JSON objects. For example, `app.port` refers to:
 
@@ -165,7 +167,9 @@ while this is invalid because the value is a string:
 }
 ```
 
-The validator has explicit behavior for the supported types listed above. Adding a new type with meaningful validation behavior requires a Java code change. An unrecognized type name is not currently given additional validation semantics.
+The validator checks values against the six supported types listed above. However, if the specification contains an unknown type name, the current implementation accepts any JSON value for that field. This happens because `SchemaValidator.typeMatches` returns `true` for unrecognized types.
+
+This is a limitation of the current implementation. Adding proper support for a new type would require changes to the Java code.
 
 ### `mergeStrategies`
 
@@ -183,6 +187,10 @@ Current sample values:
 Merge strategies are selected by dotted path.
 
 ConfigMaster first looks for an explicit strategy for the current path in `mergeStrategies`. If none exists, it uses `defaultMergeStrategy`. If no default is supplied, the implementation falls back to `override`.
+
+When both layers contain JSON objects at the same key, ConfigMaster merges their contents field by field. It does this before applying any merge strategy for that path. A merge strategy is applied when at least one of the two values is not an object.
+
+The current implementation also treats an unknown merge strategy as `override`. This means an unrecognized strategy name does not currently produce an error.
 
 #### `override`
 
@@ -258,7 +266,9 @@ If either value is not an array, ConfigMaster records a merge issue.
 
 #### `fail_on_conflict`
 
-If two layers provide different non-null values for the same path, ConfigMaster records a merge issue instead of silently overriding the existing value.
+The `fail_on_conflict` strategy compares the values from both layers. If they are different, ConfigMaster reports a merge conflict instead of replacing the existing value.
+
+If the values are equal, there is no conflict, and the existing value is kept. This also applies when both values are JSON `null`. However, comparing `null` with a value such as `"eu-west-1"` causes a conflict.
 
 Base layer:
 
@@ -353,9 +363,9 @@ The current scaffold file at `config/client-spec.json` contains:
 }
 ```
 
-These values are sample scaffold data used to demonstrate the schema structure and merge behavior.
+This is the current specification for Northwind Payments. It defines the required fields, expected data types, and merge rules based on the client's requirements.
 
-Fields such as `app.name`, `app.port`, `app.region`, and `app.features` are not permanent GenKey-specific fields.
+The field paths, including `app.name`, `app.port`, `app.region`, and `app.features`, are read from the specification at runtime. They are not hard-coded into the Java implementation, so a future client can provide different fields without changing the existing field names in the code.
 
 ## Dynamic adoption
 

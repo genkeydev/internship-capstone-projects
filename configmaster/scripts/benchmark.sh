@@ -73,70 +73,53 @@ echo "Generated $VALUES_PER_LAYER benchmark values per layer."
 echo "Compiling ConfigMaster..."
 (
     cd "$ROOT_DIR"
-    mvn -q -DskipTests compile
+    mvn -q -DskipTests compile dependency:copy-dependencies \
+        -DoutputDirectory=target/dependency
 )
 
-echo "Running ConfigMaster end-to-end CLI benchmark..."
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) CP_SEPARATOR=";" ;;
+    *) CP_SEPARATOR=":" ;;
+esac
 
-start_ns=$(date +%s%N)
+echo "Running ConfigMaster Java CLI benchmark..."
+
+TIMEFORMAT='%3R'
 
 (
     cd "$ROOT_DIR"
-    mvn -q exec:java \
-        -Dexec.args="merge target/benchmark/base.json target/benchmark/overlay.json" \
-        > target/benchmark/merged.json
+    { time java -cp "target/classes${CP_SEPARATOR}target/dependency/*" \
+        com.genkey.configmaster.ConfigMasterCli \
+        merge target/benchmark/base.json target/benchmark/overlay.json \
+        > "$OUTPUT_FILE"; } 2> "$BENCHMARK_DIR/time.txt"
 )
-
-end_ns=$(date +%s%N)
-
-elapsed_ms=$(( (end_ns - start_ns) / 1000000 ))
 
 if [[ ! -s "$OUTPUT_FILE" ]]; then
     echo "Benchmark failed: merged output was not created." >&2
     exit 1
 fi
 
-echo "End-to-end CLI wall time (including Maven/JVM startup): ${elapsed_ms} ms."
+elapsed_ms=$(awk 'END {printf "%.0f", $1 * 1000}' "$BENCHMARK_DIR/time.txt")
 
-if [[ ! -f "$RESULT_FILE" ]]; then
-    cat > "$RESULT_FILE" <<'EOF'
-# ConfigMaster Benchmarks
+echo "Java CLI wall time (including JVM startup): ${elapsed_ms} ms."
 
-This document records wall-clock benchmark results for ConfigMaster when merging large generated JSON configuration trees.
+if ! grep -q '^## Java CLI results$' "$RESULT_FILE"; then
+    cat >> "$RESULT_FILE" <<'EOF'
 
-## Benchmark configuration
+## Java CLI results
 
-The benchmark generates two JSON configuration layers. Each layer contains 200 groups with 50 values per group, giving 10,000 values per layer.
+These measurements include JVM startup but exclude Maven startup.
 
-Both layers include the required `app.name` and `app.port` fields so the merged configuration is valid against the current client specification.
-
-The script generates the test files and compiles ConfigMaster before timing starts.
-
-The recorded wall time measures the full `mvn exec:java` invocation, including Maven and JVM startup, configuration loading, merging, validation, and output generation. It is an end-to-end CLI measurement, not the time spent on merging alone.
-
-Generated benchmark files are stored under `target/benchmark/` and are not committed.
-
-## Results
-
-| Date                | Groups | Keys per group | Values per layer | End-to-end CLI wall time |
-|---------------------|-------:|---------------:|-----------------:|-------------------------:|
+| Date                | Groups | Keys per group | Values per layer | Java CLI wall time |
+|---------------------|-------:|---------------:|-----------------:|-------------------:|
 EOF
 fi
 
-if [[ -s "$RESULT_FILE" ]]; then
-    last_char=$(tail -c 1 "$RESULT_FILE" | od -An -tu1 | tr -d '[:space:]')
-
-    if [[ "$last_char" != "10" ]]; then
-        printf '\n' >> "$RESULT_FILE"
-    fi
-fi
-
-printf '| %-19s | %6s | %14s | %16s | %24s |\n' \
+printf '| %-19s | %6s | %14s | %16s | %18s |\n' \
     "$(date '+%Y-%m-%d %H:%M:%S')" \
     "$GROUP_COUNT" \
     "$KEYS_PER_GROUP" \
     "$VALUES_PER_LAYER" \
-    "${elapsed_ms} ms" \
-    >> "$RESULT_FILE"
+    "${elapsed_ms} ms" >> "$RESULT_FILE"
 
 echo "Benchmark result recorded in docs/BENCHMARKS.md."

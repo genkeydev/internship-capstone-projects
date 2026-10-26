@@ -52,7 +52,7 @@ Current scaffold value:
 "schemaVersion": "1.0.0"
 ```
 
-The current implementation loads this value as specification metadata. It does not currently perform semantic-version compatibility checking.
+ConfigMaster checks the `schemaVersion` when loading the client specification. It accepts versions in the `1.x.x` format, such as `1.0.0` and `1.2.3`. Missing, blank, malformed, or unsupported versions are rejected. If the version is invalid, the CLI reports an error to stderr, leaves stdout empty, and exits with code `2`.
 
 ### `client`
 

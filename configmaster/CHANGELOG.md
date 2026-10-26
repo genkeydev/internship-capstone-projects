@@ -2,7 +2,7 @@
 
 This file records the main changes made to ConfigMaster.
 
-## [1.0.0] - 2026-10-15
+## [1.0.0]
 
 ### Added
 

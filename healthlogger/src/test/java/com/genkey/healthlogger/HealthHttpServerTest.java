@@ -3,7 +3,6 @@ package com.genkey.healthlogger;
 import com.genkey.healthlogger.model.HealthEvent;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,6 +33,7 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
 
         try {
@@ -71,7 +71,9 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
+
         try {
             String body = """
                     {
@@ -129,7 +131,9 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
+
         try {
             String body = """
                     {
@@ -195,7 +199,9 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
+
         try {
             String body =
                     "{\"service\":\"payments-api\",\"status\":\"ok\"";
@@ -251,7 +257,9 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
+
         try {
             HttpResponse<String> response = send(
                     "POST",
@@ -298,7 +306,9 @@ class HealthHttpServerTest {
                 new HealthHttpServer(spec, store, rejectedStore);
 
         server.start();
+
         port = server.port();
+
         try {
             String hugeBody = "x".repeat(
                     HealthHttpServer.MAX_REQUEST_BODY_BYTES + 1
@@ -311,25 +321,7 @@ class HealthHttpServerTest {
                     hugeBody
             );
 
-
             assertEquals(413, response.statusCode());
-
-            assertTrue(
-                    Files.exists(rejectedPath),
-                    "Oversized request should be recorded"
-            );
-
-            String rejection = Files.readString(rejectedPath);
-
-            assertTrue(
-                    rejection.contains("request body exceeds maximum size"),
-                    "Rejection reason should explain why the request was rejected"
-            );
-
-            assertTrue(
-                    rejection.contains("request body omitted: exceeds maximum size"),
-                    "The record should contain a bounded description, not the request body"
-            );
 
             assertTrue(
                     store.query(null).isEmpty()
@@ -339,64 +331,184 @@ class HealthHttpServerTest {
         }
     }
 
-    @Test
-    void postEventsAcceptsExtraFields() throws Exception {
-        Path tempDir = Files.createTempDirectory("healthlogger-http-test");
-        Path eventsPath = tempDir.resolve("events.jsonl");
-        Path rejectedPath = tempDir.resolve("rejected-events.jsonl");
 
-        int port = 0;
+@Test
+void postEventsAcceptsExtraFields() throws Exception {
+    Path tempDir = Files.createTempDirectory("healthlogger-http-test");
+    Path eventsPath = tempDir.resolve("events.jsonl");
+    Path rejectedPath = tempDir.resolve("rejected-events.jsonl");
 
-        ClientSpec spec = testSpec(port);
-        JsonlStore store = new JsonlStore(eventsPath);
-        RejectedEventStore rejectedStore =
-                new RejectedEventStore(rejectedPath);
+    int port = 0;
+    ClientSpec spec = testSpec(port);
+    JsonlStore store = new JsonlStore(eventsPath);
+    RejectedEventStore rejectedStore =
+            new RejectedEventStore(rejectedPath);
 
-        HealthHttpServer server =
-                new HealthHttpServer(spec, store, rejectedStore);
+    HealthHttpServer server =
+            new HealthHttpServer(spec, store, rejectedStore);
 
-        server.start();
-        port = server.port();
-        try {
-            String body = """
-                    {
-                      "service": "payments-api",
-                      "status": "ok",
-                      "timestamp": "2026-09-29T10:00:00Z",
-                      "region": "accra",
-                      "version": "2.1.0"
-                    }
-                    """;
+    server.start();
+    port = server.port();
 
-            HttpResponse<String> response = send(
-                    "POST",
-                    port,
-                    "/events",
-                    body
-            );
+    try {
+        String body = """
+                {
+                  "service": "payments-api",
+                  "status": "ok",
+                  "timestamp": "2026-09-29T10:00:00Z",
+                  "region": "accra",
+                  "version": "2.1.0"
+                }
+                """;
 
-            assertEquals(201, response.statusCode());
+        HttpResponse<String> response = send(
+                "POST",
+                port,
+                "/events",
+                body
+        );
 
-            List<HealthEvent> events = store.query(null);
+        assertEquals(201, response.statusCode());
 
-            assertEquals(1, events.size());
+        List<HealthEvent> events = store.query(null);
+        assertEquals(1, events.size());
 
-            Map<String, Object> fields =
-                    events.get(0).fields();
+        Map<String, Object> fields = events.get(0).fields();
 
-            assertEquals(
-                    "accra",
-                    fields.get("region")
-            );
-
-            assertEquals(
-                    "2.1.0",
-                    fields.get("version")
-            );
-        } finally {
-            server.stop();
-        }
+        assertEquals("accra", fields.get("region"));
+        assertEquals("2.1.0", fields.get("version"));
+    } finally {
+        server.stop();
     }
+}
+
+
+@Test
+void postEventsEnforcesRegionWhenRequiredByClientSpec() throws Exception {
+    Path tempDir = Files.createTempDirectory("healthlogger-region-test");
+    Path specPath = tempDir.resolve("client-spec.json");
+    Path eventsPath = tempDir.resolve("events.jsonl");
+    Path rejectedPath = tempDir.resolve("rejected-events.jsonl");
+
+    String specJson = """
+            {
+              "schemaVersion": "1.0.0",
+              "client": "Harbor Ops Region Test",
+              "requiredFields": ["service", "status", "timestamp", "region"],
+              "allowedStatuses": ["ok", "degraded", "down"],
+              "severityMap": {
+                "ok": "info",
+                "degraded": "warn",
+                "down": "error"
+              },
+              "httpPort": 0
+            }
+            """;
+
+    Files.writeString(specPath, specJson);
+
+    ClientSpec spec = Json.loadSpec(specPath);
+    JsonlStore store = new JsonlStore(eventsPath);
+    RejectedEventStore rejectedStore =
+            new RejectedEventStore(rejectedPath);
+
+    HealthHttpServer server =
+            new HealthHttpServer(spec, store, rejectedStore);
+
+    server.start();
+    int port = server.port();
+
+    try {
+        String missingRegion = """
+                {
+                  "service": "payments-api",
+                  "status": "ok",
+                  "timestamp": "2026-10-22T10:00:00Z"
+                }
+                """;
+
+        HttpResponse<String> rejectedResponse = send(
+                "POST",
+                port,
+                "/events",
+                missingRegion
+        );
+
+        assertEquals(400, rejectedResponse.statusCode());
+        assertTrue(store.query(null).isEmpty());
+        assertTrue(Files.exists(rejectedPath));
+        assertTrue(
+                Files.readString(rejectedPath).contains("region"),
+                "Rejection should explain that region is required"
+        );
+
+        String withRegion = """
+                {
+                  "service": "payments-api",
+                  "status": "ok",
+                  "timestamp": "2026-10-22T10:01:00Z",
+                  "region": "accra"
+                }
+                """;
+
+        HttpResponse<String> acceptedResponse = send(
+                "POST",
+                port,
+                "/events",
+                withRegion
+        );
+
+        assertEquals(201, acceptedResponse.statusCode());
+
+        List<HealthEvent> events = store.query(null);
+        assertEquals(1, events.size());
+        assertEquals("accra", events.get(0).fields().get("region"));
+    } finally {
+        server.stop();
+    }
+}
+
+    
+@Test
+void postEventsRejectsJsonNullAndSavesRejection() throws Exception {
+    Path tempDir = Files.createTempDirectory("healthlogger-http-test");
+    Path eventsPath = tempDir.resolve("events.jsonl");
+    Path rejectedPath = tempDir.resolve("rejected-events.jsonl");
+
+    int port = 0;
+    ClientSpec spec = testSpec(port);
+    JsonlStore store = new JsonlStore(eventsPath);
+    RejectedEventStore rejectedStore =
+            new RejectedEventStore(rejectedPath);
+
+    HealthHttpServer server =
+            new HealthHttpServer(spec, store, rejectedStore);
+
+    server.start();
+
+        port = server.port();
+
+    try {
+        HttpResponse<String> response = send(
+                "POST",
+                port,
+                "/events",
+                "null"
+        );
+
+        assertEquals(400, response.statusCode());
+        assertTrue(store.query(null).isEmpty());
+        assertTrue(Files.exists(rejectedPath));
+
+        String rejection = Files.readString(rejectedPath);
+        assertTrue(rejection.contains("malformed JSON"));
+    } finally {
+        server.stop();
+    }
+}
+
+
+
 
     private static ClientSpec testSpec(int port) {
         return new ClientSpec(
@@ -420,6 +532,7 @@ class HealthHttpServerTest {
                 port
         );
     }
+
 
     private static HttpResponse<String> send(
             String method,

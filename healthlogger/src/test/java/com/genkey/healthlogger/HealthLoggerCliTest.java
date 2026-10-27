@@ -1,5 +1,9 @@
 package com.genkey.healthlogger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -201,18 +205,33 @@ class HealthLoggerCliTest {
                 """
         );
 
-        int result = HealthLoggerCli.run(
-                new String[]{
-                        "query",
-                        "--spec",
-                        specPath.toString(),
-                        "--store",
-                        storePath.toString()
-                }
-        );
+               PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        int result;
+
+        try (PrintStream capturedOut =
+                     new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capturedOut);
+
+            result = HealthLoggerCli.run(
+                    new String[]{
+                            "query",
+                            "--spec",
+                            specPath.toString(),
+                            "--store",
+                            storePath.toString()
+                    }
+            );
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String printed = output.toString(StandardCharsets.UTF_8);
 
         assertEquals(0, result);
-    }
+        assertTrue(printed.contains("payments-api"));
+        assertTrue(printed.contains("orders-api"));
+}
 
     @Test
     void queryWithServiceFilterReturnsSuccess()
@@ -235,19 +254,34 @@ class HealthLoggerCliTest {
                 """
         );
 
-        int result = HealthLoggerCli.run(
-                new String[]{
-                        "query",
-                        "--spec",
-                        specPath.toString(),
-                        "--store",
-                        storePath.toString(),
-                        "--service",
-                        "payments-api"
-                }
-        );
+               PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        int result;
+
+        try (PrintStream capturedOut =
+                     new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capturedOut);
+
+            result = HealthLoggerCli.run(
+                    new String[]{
+                            "query",
+                            "--spec",
+                            specPath.toString(),
+                            "--store",
+                            storePath.toString(),
+                            "--service",
+                            "payments-api"
+                    }
+            );
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String printed = output.toString(StandardCharsets.UTF_8);
 
         assertEquals(0, result);
+        assertTrue(printed.contains("payments-api"));
+        assertFalse(printed.contains("orders-api"));
     }
 
     private static Path createSpec(Path tempDir)

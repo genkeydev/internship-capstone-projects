@@ -134,17 +134,16 @@ The command shall reject invalid events and shall not store them.
 
 The `query` command shall retrieve previously stored events.
 
-The initial client requirement is to filter events by `service`.
+The `--service` option is optional. When provided, it filters events by `service`. When omitted, the command returns all previously stored events.
 
 #### Acceptance Criteria
 
 The command is considered successful when:
 
-* A service value is provided.
-* Previously stored events matching that service are returned.
-* Events belonging to other services are not returned.
-* If no matching events exist, the command returns an empty result rather than creating an error condition.
-
+* Previously stored events are returned.
+* If `--service` is provided, only events matching that service are returned.
+* If `--service` is omitted, events from all services are returned.
+* If no events match the query, the command returns an empty result rather than an error.
 ---
 
 ### 4.3 `serve`

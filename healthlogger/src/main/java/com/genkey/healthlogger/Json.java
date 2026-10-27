@@ -23,10 +23,18 @@ public final class Json {
         }
     }
 
-    public static HealthEvent parseEvent(String jsonLine) throws IOException {
-        Map<String, Object> fields = MAPPER.readValue(jsonLine, new TypeReference<>() {});
-        return new HealthEvent(fields);
+    
+      public static HealthEvent parseEvent(String jsonLine) throws IOException {
+    Map<String, Object> fields =
+            MAPPER.readValue(jsonLine, new TypeReference<>() {});
+
+    if (fields == null) {
+        throw new IOException("JSON event must be an object");
     }
+
+    return new HealthEvent(fields);
+}
+
 
     public static String toJson(Object value) throws IOException {
         return MAPPER.writeValueAsString(value);

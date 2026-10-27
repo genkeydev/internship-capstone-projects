@@ -160,7 +160,7 @@ class ConfigMasterCliTest {
 
         Files.writeString(spec, """
                 {
-                  "schemaVersion": "1.0",
+                  "schemaVersion": "1.0.0",
                   "client": "GenKey",
                   "requiredFields": [
                     "app.port"
@@ -174,5 +174,48 @@ class ConfigMasterCliTest {
                 """);
 
         return spec;
+    }
+    
+    @Test
+    void rejectsUnsupportedSchemaVersion() throws Exception {
+        Path specFile = tempDir.resolve("client-spec.json");
+        Files.writeString(specFile, """
+                {
+                  "schemaVersion": "2.0.0",
+                  "client": "Test Client",
+                  "requiredFields": [],
+                  "fieldTypes": {},
+                  "mergeStrategies": {},
+                  "defaultMergeStrategy": "override"
+                }
+                """);
+
+        Path configFile = tempDir.resolve("config.json");
+        Files.writeString(configFile, "{}");
+
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ByteArrayOutputStream errors = new ByteArrayOutputStream();
+
+        int exitCode;
+
+        try {
+            System.setOut(new PrintStream(output));
+            System.setErr(new PrintStream(errors));
+
+            exitCode = ConfigMasterCli.run(new String[] {
+                    "validate",
+                    "--spec", specFile.toString(),
+                    configFile.toString()
+            });
+        } finally {
+            System.setOut(originalOut);
+            System.setErr(originalErr);
+        }
+
+        assertEquals(2, exitCode);
+        assertTrue(errors.toString().contains("unsupported schemaVersion: 2.0.0"));
+        assertTrue(output.toString().isEmpty());
     }
 }

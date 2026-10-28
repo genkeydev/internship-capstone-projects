@@ -2,12 +2,12 @@ name: ConfigMaster
 
 on:
   push:
-    branches: [main, "intern/**", "interns/**", "week7/**"]
+    branches: [main, "interns/**", "week8/**"]
     paths:
       - "configmaster/**"
       - ".github/workflows/configmaster.yml"
   pull_request:
-    branches: [main, "intern/**", "interns/**"]
+    branches: [main, "interns/**"]
     paths:
       - "configmaster/**"
       - ".github/workflows/configmaster.yml"

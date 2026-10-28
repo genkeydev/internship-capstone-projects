@@ -2,7 +2,7 @@ name: ConfigMaster
 
 on:
   push:
-    branches: [main, "intern/**", "interns/**"]
+    branches: [main, "intern/**", "interns/**", "week7/**"]
     paths:
       - "configmaster/**"
       - ".github/workflows/configmaster.yml"

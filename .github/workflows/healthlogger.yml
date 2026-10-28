@@ -7,6 +7,7 @@ on:
     paths:
       - "healthlogger/**"
       - ".github/workflows/healthlogger.yml"
+
   pull_request:
     branches: [main, "intern/**", "interns/**"]
     paths:
@@ -22,17 +23,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
+
       - run: mvn -B test
 
   sast:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: returntocorp/semgrep-action@v1
         with:
           config: "p/java"
@@ -49,7 +53,7 @@ jobs:
 
       - name: Scan HealthLogger image
         if: hashFiles('healthlogger/Dockerfile') != ''
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "healthlogger:ci"
           severity: "CRITICAL,HIGH"

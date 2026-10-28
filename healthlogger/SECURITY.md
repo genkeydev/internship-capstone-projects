@@ -114,3 +114,6 @@ Security tests should use synthetic or non-sensitive information.
 This policy should be updated when the HealthLogger architecture, deployment model, data-handling requirements, or client security requirements change.
 
 Significant security changes should be documented, tested, and reviewed before being incorporated into the project.
+
+The bind address can be changed with the `HEALTHLOGGER_BIND` environment variable. The Docker setup sets `HEALTHLOGGER_BIND=0.0.0.0` inside the container only, so the published port can reach the process. `compose.yaml` publishes the port on `127.0.0.1:8088` on the host, so the API is still not reachable from other machines. Do not publish this port on other interfaces, because the API has no authentication.
+

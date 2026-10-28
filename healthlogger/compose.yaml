@@ -1,0 +1,19 @@
+services:
+  healthlogger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8088:8088"
+    environment:
+      HEALTHLOGGER_SPEC: /app/config/client-spec.json
+      HEALTHLOGGER_STORE: /app/data/events.jsonl
+      # Listen on all interfaces inside the container so the published port works.
+      # The host side stays loopback-only via the ports mapping above.
+      HEALTHLOGGER_BIND: 0.0.0.0
+    volumes:
+      - healthlogger-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  healthlogger-data:

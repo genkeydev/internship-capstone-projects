@@ -30,21 +30,37 @@ public final class HealthHttpServer {
     private final ClientSpec spec;
     private final JsonlStore store;
     private final RejectedEventStore rejectedStore;
+    private final String bindHost;
     private HttpServer server;
+
+    /** Default bind address: loopback only, because the API has no authentication. */
+    public static final String DEFAULT_BIND_HOST = "127.0.0.1";
 
     public HealthHttpServer(
             ClientSpec spec,
             JsonlStore store,
             RejectedEventStore rejectedStore
     ) {
+        this(spec, store, rejectedStore, DEFAULT_BIND_HOST);
+    }
+
+    public HealthHttpServer(
+            ClientSpec spec,
+            JsonlStore store,
+            RejectedEventStore rejectedStore,
+            String bindHost
+    ) {
         this.spec = spec;
         this.store = store;
         this.rejectedStore = rejectedStore;
+        this.bindHost = bindHost == null || bindHost.isBlank()
+                ? DEFAULT_BIND_HOST
+                : bindHost.trim();
     }
 
     public void start() throws IOException {
         server = HttpServer.create(
-                new InetSocketAddress("127.0.0.1", spec.port()),
+                new InetSocketAddress(bindHost, spec.port()),
                 0
         );
 
@@ -53,9 +69,19 @@ public final class HealthHttpServer {
 
         server.start();
 
-        System.err.println(
-                "listening on http://127.0.0.1:" + server.getAddress().getPort()
+            System.err.println(
+                "listening on http://" + bindHost + ":" + server.getAddress().getPort()
         );
+    }
+
+    /** Host or address this server binds to. */
+    public String bindHost() {
+        return bindHost;
+    }
+
+    /** True when the listening socket is bound to a loopback address. */
+    public boolean isBoundToLoopback() {
+        return server != null && server.getAddress().getAddress().isLoopbackAddress();
     }
 
    

@@ -78,7 +78,12 @@ public final class HealthLoggerCli {
                 yield 0;
             }
             case "serve" -> {
-                HealthHttpServer http = new HealthHttpServer(spec, store,rejectedStore);
+                HealthHttpServer http = new HealthHttpServer(
+                        spec,
+                        store,
+                        rejectedStore,
+                        System.getenv("HEALTHLOGGER_BIND")
+                );
                 http.start();
                 Thread.currentThread().join();
                 yield 0;

@@ -24,7 +24,40 @@ mvn -q exec:java "-Dexec.arguments=query,--service,payments-api"
 
 Use `exec.arguments` (comma-separated) so Maven does not steal flags such as `--file`. Inline JSON is optional: `record '{"service":"..."}'`.
 
-`serve` listens on `127.0.0.1` and the port in the client spec (default 8088).
+`serve` listens on `127.0.0.1` by default and on the port in the client spec (default 8088). The API has no authentication, so keep it on loopback. To change the address, set `HEALTHLOGGER_BIND` (for example `0.0.0.0`); Docker Compose does this inside the container.
+
+## Run with Docker
+
+Requires Docker with Compose.
+
+```bash
+cd healthlogger
+docker compose up --build
+```
+
+In another terminal:
+
+```bash
+curl http://127.0.0.1:8088/health
+curl -X POST http://127.0.0.1:8088/events \
+  -H "Content-Type: application/json" \
+  -d '{"service":"payments-api","status":"ok","timestamp":"2026-09-29T10:00:00Z"}'
+```
+
+On Windows PowerShell, use `curl.exe` and `Invoke-RestMethod`:
+
+```powershell
+curl.exe http://127.0.0.1:8088/health
+$body = '{"service":"payments-api","status":"ok","timestamp":"2026-09-29T10:00:00Z"}'
+Invoke-RestMethod -Uri http://127.0.0.1:8088/events -Method Post -ContentType "application/json" -Body $body
+```
+
+Notes:
+
+- The container runs as a non-root user (UID 10001). `compose.yaml` sets `HEALTHLOGGER_BIND=0.0.0.0` so the process listens on all interfaces inside the container, and publishes the port on `127.0.0.1` only, so it is not reachable from other machines.
+- Events and rejected submissions are stored in the `healthlogger-data` Docker volume (mounted at `/app/data`), so they survive restarts.
+- Stop with `docker compose down`. Add `-v` to also delete the stored data.
+- CI builds the image and scans it with Trivy (HIGH and CRITICAL findings fail the build).
 
 ## Git / PR workflow
 

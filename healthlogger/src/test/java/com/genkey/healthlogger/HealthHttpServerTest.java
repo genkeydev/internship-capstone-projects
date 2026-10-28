@@ -510,6 +510,62 @@ void postEventsRejectsJsonNullAndSavesRejection() throws Exception {
 
 
 
+    @Test
+    void bindsToLoopbackByDefault() throws Exception {
+        Path tempDir = Files.createTempDirectory("healthlogger-http-test");
+        HealthHttpServer server = new HealthHttpServer(
+                testSpec(0),
+                new JsonlStore(tempDir.resolve("events.jsonl")),
+                new RejectedEventStore(tempDir.resolve("rejected-events.jsonl"))
+        );
+
+        assertEquals("127.0.0.1", server.bindHost());
+
+        server.start();
+        try {
+            assertTrue(server.isBoundToLoopback());
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    void blankOrMissingBindHostFallsBackToLoopback() throws Exception {
+        Path tempDir = Files.createTempDirectory("healthlogger-http-test");
+        JsonlStore store = new JsonlStore(tempDir.resolve("events.jsonl"));
+        RejectedEventStore rejected =
+                new RejectedEventStore(tempDir.resolve("rejected-events.jsonl"));
+
+        assertEquals(
+                "127.0.0.1",
+                new HealthHttpServer(testSpec(0), store, rejected, null).bindHost()
+        );
+        assertEquals(
+                "127.0.0.1",
+                new HealthHttpServer(testSpec(0), store, rejected, "  ").bindHost()
+        );
+    }
+
+    @Test
+    void explicitBindHostIsUsed() throws Exception {
+        Path tempDir = Files.createTempDirectory("healthlogger-http-test");
+        HealthHttpServer server = new HealthHttpServer(
+                testSpec(0),
+                new JsonlStore(tempDir.resolve("events.jsonl")),
+                new RejectedEventStore(tempDir.resolve("rejected-events.jsonl")),
+                "0.0.0.0"
+        );
+
+        assertEquals("0.0.0.0", server.bindHost());
+
+        server.start();
+        try {
+            assertFalse(server.isBoundToLoopback());
+        } finally {
+            server.stop();
+        }
+    }
+
     private static ClientSpec testSpec(int port) {
         return new ClientSpec(
                 "1.0.0",

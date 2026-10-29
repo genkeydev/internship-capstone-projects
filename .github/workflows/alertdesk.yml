@@ -2,12 +2,12 @@ name: AlertDesk
 
 on:
   push:
-    branches: [main, "intern/**"]
+    branches: [main, "intern/**", "interns/**"]
     paths:
       - "alertdesk/**"
       - ".github/workflows/alertdesk.yml"
   pull_request:
-    branches: [main, "intern/**"]
+    branches: [main, "intern/**", "interns/**"]
     paths:
       - "alertdesk/**"
       - ".github/workflows/alertdesk.yml"

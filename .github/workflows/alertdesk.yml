@@ -2,12 +2,12 @@ name: AlertDesk
 
 on:
   push:
-    branches: [main, "intern/**"]
+    branches: [main, "intern/**", "interns/**"]
     paths:
       - "alertdesk/**"
       - ".github/workflows/alertdesk.yml"
   pull_request:
-    branches: [main, "intern/**"]
+    branches: [main, "intern/**", "interns/**"]
     paths:
       - "alertdesk/**"
       - ".github/workflows/alertdesk.yml"
@@ -38,7 +38,6 @@ jobs:
   container-scan:
     runs-on: ubuntu-latest
     needs: [test]
-    if: hashFiles('alertdesk/Dockerfile') != ''
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t alertdesk:ci .

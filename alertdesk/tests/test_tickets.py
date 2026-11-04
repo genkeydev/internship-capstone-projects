@@ -1,8 +1,9 @@
-"""Starter API tests — one happy path and one illegal transition."""
+"""Starter API tests — ticket creation, transitions, and audit protection."""
 
 from __future__ import annotations
 
 import os
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +20,7 @@ def client(tmp_path, monkeypatch):
     conn = db.connect(dbfile)
     db.init_schema(conn)
     conn.close()
+
     with TestClient(app) as c:
         yield c
 
@@ -48,3 +50,37 @@ def test_illegal_transition_new_to_resolved(client: TestClient):
         headers={"Authorization": "Bearer lead-token"},
     )
     assert res.status_code == 409
+
+
+def test_audit_events_cannot_be_updated(client: TestClient):
+    conn = db.connect()
+    conn.execute(
+        "INSERT INTO audit_events (actor, action, detail) VALUES (?, ?, ?)",
+        ("admin", "test", "original detail"),
+    )
+    conn.commit()
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "UPDATE audit_events SET detail = ? WHERE action = ?",
+            ("modified detail", "test"),
+        )
+
+    conn.close()
+
+
+def test_audit_events_cannot_be_deleted(client: TestClient):
+    conn = db.connect()
+    conn.execute(
+        "INSERT INTO audit_events (actor, action, detail) VALUES (?, ?, ?)",
+        ("admin", "test", "original detail"),
+    )
+    conn.commit()
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "DELETE FROM audit_events WHERE action = ?",
+            ("test",),
+        )
+
+    conn.close()

@@ -132,7 +132,7 @@ those field names to the Java implementation.
 
 ### Schema version
 
-The client specification includes a `schemaVersion` field, currently set to `1.0.0`. In v1, ConfigMaster loads this value but does not check or enforce it. Validating supported schema versions is a possible Week 6 extension and is not required for the initial CLI.
+The client specification includes a `schemaVersion` field, currently set to `1.0.0`. ConfigMaster supports schema versions in the `1.x.x` format and rejects missing, blank, malformed, or unsupported versions. An invalid schema version causes the CLI to exit with code `2`, report the error to stderr, and leave stdout empty. This validation was added as the Week 6 client-driven extension.
 
 A replacement specification can reuse the supported field types and merge
 strategies without changing Java code. If a future specification introduces a

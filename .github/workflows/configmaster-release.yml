@@ -1,0 +1,55 @@
+
+name: ConfigMaster Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test and package executable JAR
+        run: mvn -B -f configmaster/pom.xml clean verify
+
+      - name: Create GitHub Release if needed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --repo "$GITHUB_REPOSITORY"
+
+      - name: Upload executable JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR_PATH=$(find configmaster/target -maxdepth 1 \
+            -type f -name 'configmaster-*.jar' \
+            ! -name 'original-*' -print -quit)
+
+          if [ -z "$JAR_PATH" ]; then
+            echo "Executable JAR not found."
+            exit 1
+          fi
+
+          gh release upload "$GITHUB_REF_NAME" "$JAR_PATH" \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"

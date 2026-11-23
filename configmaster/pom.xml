@@ -6,7 +6,7 @@
 
   <groupId>com.genkey</groupId>
   <artifactId>configmaster</artifactId>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <name>ConfigMaster CLI</name>
   <description>Year 1 Software Engineering capstone — load, validate, and merge configuration</description>
 
@@ -54,6 +54,27 @@
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.genkey.configmaster.ConfigMasterCli</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
